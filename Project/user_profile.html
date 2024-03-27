@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+    <h1>Welcome, {{ username }}!</h1>
+
+    <div>
+        <h2>User Profile Information</h2>
+        <p>Username: {{ username }}</p>
+        <!-- Add more profile information here -->
+    </div>
+
+    <!-- Hidden input field to store the username -->
+    <input type="hidden" id="username" name="username" value="{{ username }}">
+
+    <a href="/">Back to Login</a>
+
+    <br>
+    <br>
+    <hr>
+    <br>
+    <br>
+
+    <button onclick="getLocation()">Get Location</button>
+    <p id="demo"></p>
+
+    <form id="otp-form">
+    <h2>Enter OTP: <span id="otp"></span></h2>
+    <label for="input-otp"></label><input type="text" id="input-otp" name="input-otp">
+    <button id="submit-otp" name="submit-otp" onclick="clearInput()">Submit OTP</button>
+    </form>
+
+    <br>
+    <br>
+    <hr>
+    <br>
+    <br>
+
+    <form id="final-submit-form">
+        <!-- Hidden input fields for x and y coordinates -->
+    <input type="hidden" id="user-x" name="user-x" value="">
+    <input type="hidden" id="user-y" name="user-y" value="">
+
+    <button id="final-submit" name="final-submit">Submit</button>
+    </form>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+
+<script>
+    function clearInput() {
+        // Get the input element by its ID
+        var inputOtp = document.getElementById('input-otp');
+
+        // Clear the input field value
+        inputOtp.value = '';
+    }
+
+    // Function to close the window
+    function closeWindow() {
+        window.close();
+    }
+
+    // Set a timeout to call the function after 55 seconds (55000 milliseconds)
+    setTimeout(closeWindow, 55000);
+
+    // #############################################################################################################
+
+
+    // Initialize the variables outside the click event
+    var x_initial, y_initial, username_initial;
+
+    // Function to get user's location and set initial values
+    function initializeLocationAndSubmit(callback) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    // Set the obtained coordinates in the initial variables
+                    x_initial = position.coords.latitude;
+                    y_initial = position.coords.longitude;
+
+                    // Set initial values in hidden input fields
+                    $('#user-x').val(x_initial);
+                    $('#user-y').val(y_initial);
+
+                    // Call the provided callback function
+                    callback();
+                },
+                function(error) {
+                    // Handle errors as needed
+                    console.error("Error getting location:", error.message);
+                }
+            );
+        } else {
+            document.getElementById("demo").innerHTML = "Geolocation is not supported by this browser.";
+        }
+    }
+
+    // Initial call to initializeLocationAndSubmit
+    initializeLocationAndSubmit(function() {
+        // Optional: You can perform additional actions after initialization
+        console.log("Location initialized.");
+    });
+
+    // #############################################################################################################
+
+
+    $(document).ready(function () {
+        $('#otp-form').submit(function (e) {
+            e.preventDefault(); // Prevent the form from submitting in the traditional way
+
+            var otpInput = $('#input-otp').val();
+            var username = $('#username').val();
+
+            $.ajax({
+                type: 'POST',
+                url: '/check-otp',
+                data: { 'input-otp': otpInput, 'username': username},
+                success: function (response) {
+                    alert(response.message); // or update the UI as needed
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        });
+    });
+
+    $("#final-submit-form").click(function(e) {
+        // Prevent the default form submission behavior
+        e.preventDefault();
+
+        // Get the user's location before submitting the form
+        getLocation(function (x, y) {
+            // Set the obtained coordinates in the hidden input fields
+            $('#user-x').val(x);
+            $('#user-y').val(y);
+
+            // Continue with the form submission
+            var username = $('#username').val();
+
+            // Use AJAX to submit the form to the Flask route
+            $.ajax({
+                type: "POST",
+                url: "/submit_location",
+                data: {'user-x': x, 'user-y': y, 'username': username},
+                success: function (response) {
+                    // Handle the response from the server
+                    console.log(response);
+                },
+                error: function (error) {
+                    // Handle errors if any
+                    console.error(error);
+                }
+            });
+        });
+
+    });
+
+    // #############################################################################################
+
+    function getLocation(callback) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    // Call the callback function with the coordinates
+                    console.log(position.coords.latitude, position.coords.longitude);
+                    callback(position.coords.latitude, position.coords.longitude);
+                },
+                function(error) {
+                    // Handle errors as needed
+                    console.error("Error getting location:", error.message);
+                }
+            );
+        } else {
+            document.getElementById("demo").innerHTML = "Geolocation is not supported by this browser.";
+        }
+    }
+
+    function showPosition(position) {
+
+      // ###################################################################
+
+      document.getElementById("user-x").value = position.coords.latitude;
+      document.getElementById("user-y").value = position.coords.longitude;
+
+      alert("Position: " + position.coords.latitude + ", " + position.coords.longitude);
+
+      // ###################################################################
+    }
+
+    function showError(error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          document.getElementById("demo").innerHTML = "User denied the request for Geolocation.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          document.getElementById("demo").innerHTML = "Location information is unavailable.";
+          break;
+        case error.TIMEOUT:
+          document.getElementById("demo").innerHTML = "The request to get user location timed out.";
+          break;
+        case error.UNKNOWN_ERROR:
+          document.getElementById("demo").innerHTML = "An unknown error occurred.";
+          break;
+      }
+    }
+  </script>
+</body>
+</html>
