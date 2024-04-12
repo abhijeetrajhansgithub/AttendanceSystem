@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+</head>
+<body>
+    <h1>Welcome, {{ username }}!</h1>
+
+    <div>
+        <h2>User Profile Information</h2>
+        <p>Username: {{ username }}</p>
+        <!-- Add more profile information here -->
+    </div>
+
+    <!-- Hidden input field to store the username -->
+    <input type="hidden" id="username" name="username" value="{{ username }}">
+
+    <a href="/">Back to Login</a>
+
+    <br>
+    <br>
+    <hr>
+    <br>
+    <br>
+
+    <button onclick="getLocation()">Get Location</button>
+    <p id="demo"></p>
+
+    <form id="otp-form">
+    <h2>Enter OTP: <span id="otp"></span></h2>
+    <label for="input-otp"></label><input type="text" id="input-otp" name="input-otp">
+    <button id="submit-otp" name="submit-otp">Submit OTP</button>
+</form>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+
+<script>
+    $(document).ready(function () {
+        $('#otp-form').submit(function (e) {
+            e.preventDefault(); // Prevent the form from submitting in the traditional way
+
+            var otpInput = $('#input-otp').val();
+            var username = $('#username').val();
+
+            $.ajax({
+                type: 'POST',
+                url: '/check-otp',
+                data: { 'input-otp': otpInput, 'username': username},
+                success: function (response) {
+                    alert(response.message); // or update the UI as needed
+                },
+                error: function (error) {
+                    console.log(error);
+                }
+            });
+        });
+    });
+
+    // ##############################################################################################
+
+    var polygonCoords = [
+      { lat: 26.842926, lng: 75.5637137 },
+      { lat: 26.8434183, lng: 75.5645787 },
+      { lat: 26.8421930, lng: 75.5651661 },
+      { lat: 26.8418912, lng: 75.5641915 }
+    ];
+
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+      } else {
+        document.getElementById("demo").innerHTML = "Geolocation is not supported by this browser.";
+      }
+    }
+
+    function isPointInPolygon(point, polygonCoords) {
+      var x = point.latitude, y = point.longitude;
+      var inside = false;
+
+      for (var i = 0, j = polygonCoords.length - 1; i < polygonCoords.length; j = i++) {
+        var xi = polygonCoords[i].lat, yi = polygonCoords[i].lng;
+        var xj = polygonCoords[j].lat, yj = polygonCoords[j].lng;
+
+        var intersect = ((yi > y) !== (yj > y)) &&
+          (x < ((xj - xi) * (y - yi) / (yj - yi) + xi));
+
+        if (intersect) inside = !inside;
+      }
+
+      return inside;
+    }
+
+    function showPosition(position) {
+      var latitude = position.coords.latitude;
+      var longitude = position.coords.longitude;
+
+      // Check if the location is inside the polygon
+      var isInsidePolygon = isPointInPolygon({ latitude, longitude }, polygonCoords);
+
+      // Display the result
+      document.getElementById("demo").innerHTML = "Latitude: " + latitude + "<br>Longitude: " + longitude +
+        "<br>Is the location inside the polygon? " + isInsidePolygon;
+    }
+
+    function showError(error) {
+      switch (error.code) {
+        case error.PERMISSION_DENIED:
+          document.getElementById("demo").innerHTML = "User denied the request for Geolocation.";
+          break;
+        case error.POSITION_UNAVAILABLE:
+          document.getElementById("demo").innerHTML = "Location information is unavailable.";
+          break;
+        case error.TIMEOUT:
+          document.getElementById("demo").innerHTML = "The request to get user location timed out.";
+          break;
+        case error.UNKNOWN_ERROR:
+          document.getElementById("demo").innerHTML = "An unknown error occurred.";
+          break;
+      }
+    }
+  </script>
+</body>
+</html>
